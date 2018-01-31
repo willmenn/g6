@@ -64,7 +64,8 @@ public class LogDAO {
 
     }
 
-    public Optional<List<String>> searchIpsBetweenDatesAndWithThreshold(LocalDateTime date, Integer threshold) {
+    public Optional<List<String>> searchIpsBetweenDatesAndWithThreshold(LocalDateTime date, Integer dateRange,
+                                                                        Integer threshold) {
 
         try {
             PreparedStatement preparedStatement = getConnection().get().prepareStatement(SEARCH_IPS);
