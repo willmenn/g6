@@ -20,71 +20,78 @@ public class LogDAO {
 
     private static final String SEARCH_IPS = "SELECT ip FROM LOG " +
             "WHERE LOG_DATE " +
-            "BETWEEN ? AND DATE_SUB(?, INTERVAL -1 HOUR ) " +
+            "BETWEEN ? AND DATE_SUB(?, INTERVAL -? HOUR ) " +
             "group by ip " +
             "HAVING COUNT(ip) > ?";
 
-    private Optional<Connection> getConnection() {
-        try {
-            return Optional.of(DriverManager.getConnection("jdbc:mysql://localhost/parser",
-                    "parseruser", "password"));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return Optional.empty();
+    private static final String CONNECTION_ERROR = "The app was unable to connect into Mysql.";
+    private static final String INSERT_SQL_ERROR = "A problem occur when trying to insert rows into Mysql.";
+    private static final String SEARCH_SQL_ERROR = "A problem occur when trying to search rows into Mysql.";
+    private static final String ERROR_PREPARE_STATEMENT = "Error in the prepareStatement.";
+
+    private Connection connection;
+
+    public LogDAO() {
+        this.connection = getConnection();
     }
 
     public void insertLog(List<Log> log) {
-        getConnection().ifPresent(connection -> {
-            try {
-                PreparedStatement preparedStatement = connection.prepareStatement(INSERT);
-                connection.setAutoCommit(false);
-                log.forEach(l -> {
-                    try {
-                        preparedStatement.setString(1, l.getIp());
-                        preparedStatement.setTimestamp(2, Timestamp.valueOf(l.getDate()));
-                        preparedStatement.setString(3, l.getVerb());
-                        preparedStatement.setString(4, l.getStatus());
-                        preparedStatement.setString(5, l.getDevice());
-                        preparedStatement.addBatch();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
+        try {
+            PreparedStatement preparedStatement = this.connection.prepareStatement(INSERT);
+            this.connection.setAutoCommit(false);
 
-                });
+            log.forEach(l -> prepareBatchStatement(l, preparedStatement));
 
-                int[] result = preparedStatement.executeBatch();
-                System.out.println("The number of rows inserted: " + result.length);
-                connection.commit();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            preparedStatement.executeBatch();
+            this.connection.commit();
 
-        });
+        } catch (SQLException e) {
+            throw new JdbcSQLException(INSERT_SQL_ERROR, e);
+        }
+    }
 
+    private void prepareBatchStatement(Log log, PreparedStatement preparedStatement) {
+        try {
+            preparedStatement.setString(1, log.getIp());
+            preparedStatement.setTimestamp(2, Timestamp.valueOf(log.getDate()));
+            preparedStatement.setString(3, log.getVerb());
+            preparedStatement.setString(4, log.getStatus());
+            preparedStatement.setString(5, log.getDevice());
+            preparedStatement.addBatch();
+        } catch (SQLException e) {
+            throw new JdbcSQLException(ERROR_PREPARE_STATEMENT, e);
+        }
     }
 
     public Optional<List<String>> searchIpsBetweenDatesAndWithThreshold(LocalDateTime date, Integer dateRange,
                                                                         Integer threshold) {
 
         try {
-            PreparedStatement preparedStatement = getConnection().get().prepareStatement(SEARCH_IPS);
+            PreparedStatement preparedStatement = this.connection.prepareStatement(SEARCH_IPS);
             preparedStatement.setTimestamp(1, Timestamp.valueOf(date));
             preparedStatement.setTimestamp(2, Timestamp.valueOf(date));
             preparedStatement.setInt(3, threshold);
 
             ResultSet rs = preparedStatement.executeQuery();
             List<String> ips = new ArrayList<>();
-                while (rs.next()) {
-                    String ip = rs.getString("ip");
-                    ips.add(ip);
-                }
 
-                return Optional.of(ips);
+            while (rs.next()) {
+                String ip = rs.getString("ip");
+                ips.add(ip);
+            }
+
+            return Optional.of(ips);
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new JdbcSQLException(SEARCH_SQL_ERROR, e);
         }
+    }
 
-        return Optional.empty();
+    private Connection getConnection() {
+        try {
+            return DriverManager.getConnection("jdbc:mysql://localhost/parser",
+                    "parseruser", "password");
+        } catch (SQLException e) {
+            throw new JdbcConnectionException(CONNECTION_ERROR, e);
+        }
     }
 }

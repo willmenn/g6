@@ -19,13 +19,14 @@ public class Parser {
         List<String> argString = Arrays.asList(args);
         Args argsParsed = CommandLineParser.parseArgs(argString);
 
-        List<Log> logs = new FileParser().parseFile(argsParsed.getFileName());
+        List<Log> logs = new FileParser()
+                .parseFile(argsParsed.getFileName());
 
         LogDAO dao = new LogDAO();
         dao.insertLog(logs);
 
         Optional<List<String>> ids = dao.searchIpsBetweenDatesAndWithThreshold(argsParsed.getStartDate(),
-                argsParsed.getDateRange(),argsParsed.getThreshold());
+                argsParsed.getDateRange(), argsParsed.getThreshold());
 
         System.out.println(ids.toString());
     }

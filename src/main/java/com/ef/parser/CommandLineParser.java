@@ -48,7 +48,8 @@ public enum CommandLineParser {
 
     private static Integer parseDuration(List<String> args) {
         String duration = CommandLineParser.DURATION.getParser().apply(args)
-                .orElseThrow(() -> new IllegalArgumentException());
+                .orElseThrow(() -> new IllegalArgumentException("Missing duration."));
+
         Integer dateRange = 0;
         if (duration.equals("hourly")) {
             dateRange = 1;
