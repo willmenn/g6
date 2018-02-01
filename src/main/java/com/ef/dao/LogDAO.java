@@ -70,7 +70,8 @@ public class LogDAO {
             PreparedStatement preparedStatement = this.connection.prepareStatement(SEARCH_IPS);
             preparedStatement.setTimestamp(1, Timestamp.valueOf(date));
             preparedStatement.setTimestamp(2, Timestamp.valueOf(date));
-            preparedStatement.setInt(3, threshold);
+            preparedStatement.setInt(3, dateRange);
+            preparedStatement.setInt(4, threshold);
 
             ResultSet rs = preparedStatement.executeQuery();
             List<String> ips = new ArrayList<>();

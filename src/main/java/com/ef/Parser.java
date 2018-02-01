@@ -28,6 +28,6 @@ public class Parser {
         Optional<List<String>> ids = dao.searchIpsBetweenDatesAndWithThreshold(argsParsed.getStartDate(),
                 argsParsed.getDateRange(), argsParsed.getThreshold());
 
-        System.out.println(ids.toString());
+        System.out.println(ids.get().toString());
     }
 }

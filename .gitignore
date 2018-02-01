@@ -2,3 +2,7 @@
 .ip*
 build/
 .gradle/
+
+dist/
+dist.zip
+.DS_Store
